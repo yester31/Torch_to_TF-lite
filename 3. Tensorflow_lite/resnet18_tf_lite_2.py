@@ -5,7 +5,7 @@ import os
 from tensorflow.python.client import device_lib
 import time
 
-#os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # for CPU
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # for CPU
 
 class_name = [  #bg +  1000 classes #"background",
    "tench Tinca tinca","goldfish Carassius auratus","great white shark white shark man-eater man-eating shark Carcharodon carcharias","tiger shark Galeocerdo cuvieri","hammerhead hammerhead shark","electric ray crampfish numbfish torpedo","stingray","cock","hen","ostrich Struthio camelus","brambling Fringilla montifringilla","goldfinch Carduelis carduelis","house finch linnet Carpodacus mexicanus","junco snowbird","indigo bunting indigo finch indigo bird Passerina cyanea","robin American robin Turdus migratorius","bulbul","jay","magpie","chickadee","water ouzel dipper","kite","bald eagle American eagle Haliaeetus leucocephalus","vulture","great grey owl great gray owl Strix nebulosa","European fire salamander Salamandra salamandra","common newt Triturus vulgaris","eft","spotted salamander Ambystoma maculatum","axolotl mud puppy Ambystoma mexicanum","bullfrog Rana catesbeiana","tree frog tree-frog","tailed frog bell toad ribbed toad tailed toad Ascaphus trui","loggerhead loggerhead turtle Caretta caretta","leatherback turtle leatherback leathery turtle Dermochelys coriacea","mud turtle","terrapin","box turtle box tortoise","banded gecko","common iguana iguana Iguana iguana","American chameleon anole Anolis carolinensis",
@@ -42,11 +42,34 @@ print("tensorflow:", tf.__version__)
 saved_model_dir ='../2. Pytorch_to_Tensorflow by functional API/model/resnet18'
 #model = tf.keras.models.load_model(saved_model_dir)
 
-converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
-tflite_model = converter.convert()
-open("model/converted_model2.tflite", "wb").write(tflite_model)
+precision = '16'
+optimize = True
+if optimize:
+    tflite_name = "model/converted_model2_opti_{}.tflite".format(precision)
+    if os.path.isfile(tflite_name) == False:
+        converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        if precision == 16:
+            converter.target_spec.supported_types = [tf.float16]
+        # elif precision == 8:
+        #     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+        #     converter.inference_input_type = tf.uint8
+        #     converter.inference_output_type = tf.uint8
 
-interpreter = tf.lite.Interpreter(model_path="./model/converted_model2.tflite")
+        tflite_model = converter.convert()
+        open(tflite_name, "wb").write(tflite_model)
+    else :
+        print('The conversion process passes because the file already exists')
+else:
+    tflite_name = "model/converted_model2.tflite"
+    if os.path.isfile(tflite_name) == False:
+        converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
+        tflite_model = converter.convert()
+        open(tflite_name, "wb").write(tflite_model)
+    else :
+        print('The conversion process passes because the file already exists')
+
+interpreter = tf.lite.Interpreter(model_path=tflite_name)
 interpreter.allocate_tensors()
 
 # Get input and output tensors.
@@ -79,11 +102,3 @@ print('{} iteration time (tensorflow): {} [sec]'.format(iteration, dur_time))
 max_value2 = tf_output.max()
 max_index2 = tf_output.argmax()
 print('resnet18 max index : {} , value : {}, class name : {}'.format(max_index2, max_value2, class_name[max_index2]))
-
-
-# CPU
-# 100 iteration time (tensorflow): 4.975841522216797 [sec]
-# resnet18 max index : 388 , value : 13.55379581451416, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
-# GPU
-# 100 iteration time (tensorflow): 4.368717432022095  [sec]
-# resnet18 max index : 388 , value : 13.553840637207031, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca

@@ -50,10 +50,10 @@ class_name = [  #bg +  1000 classes #"background",
 inputs = tf.keras.Input((224, 224,3))
 resnet_torch = models.resnet18(pretrained=True)
 resnet_tf = resnet.ResNet18(inputs)
-
 model = tf.keras.Model(inputs, resnet_tf)
 #print(model.summary())
 #tf.keras.utils.plot_model(model, to_file='model.png', show_layer_names=True)
+
 
 # place all variables in list
 tf_layer_names = [layer.name for layer in model.layers]
@@ -61,8 +61,10 @@ torch_layer_names = []
 for name, module in resnet_torch.named_modules():
     torch_layer_names.append(name)
 
+
 tf_layer_names = [layer for layer in tf_layer_names if layer in torch_layer_names]
 print(tf_layer_names)
+
 
 # loop over all layers from Pytorch model also found in tensorflow model and port weights
 for layer in tf_layer_names:
@@ -109,6 +111,7 @@ for layer in tf_layer_names:
     else:
         print('No parameters found for {}'.format(layer))
 
+
 img0 = cv2.imread('../TestDate/panda0.jpg')  # image file load
 img1 = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB)    # bgr -> rgb
 img2 = img1.astype(np.float32)                  # uint -> float32
@@ -117,6 +120,7 @@ img3 = img2.transpose(2, 0, 1)                  # hwc -> chw
 img4 = torch.from_numpy(img3)                   # numpy -> tensor
 img_torch = img4.unsqueeze(0)                   # [c,h,w] -> [1,c,h,w]
 img = np.expand_dims(img2,0)
+
 
 # Feed in image of cat to both models
 tf_output = model.predict(img)  # warm up
@@ -128,6 +132,7 @@ for i in range(iteration):
     dur = time.time() - begin
     dur_time += dur
 print('{} iteration time (tensorflow): {} [sec]'.format(iteration, dur_time))
+
 
 max_value2 = tf_output.max()
 max_index2 = tf_output.argmax()
@@ -144,6 +149,7 @@ for i in range(iteration):
     dur_time2 += dur
 print('{} iteration time (pytorch): {} [sec]'.format(iteration, dur_time2))
 
+
 max_tensor = torch_output.max(dim=1)
 max_value = max_tensor[0].cpu().data.numpy()[0]
 max_index = max_tensor[1].cpu().data.numpy()[0]
@@ -155,7 +161,6 @@ diff = np.abs(tf_output - torch_output.detach().numpy())
 max_diff = np.max(diff)
 print('Max difference: {}'.format(max_diff))
 
-
 # Plot the differences(abs) between model outputs
 # plt.figure()
 # plt.plot(diff[0, :], 'r', label='difference')
@@ -165,8 +170,10 @@ print('Max difference: {}'.format(max_diff))
 # Save model ckpt
 #model.save_weights('model/resnet18') # ckpt
 
+
 # Save model h5
 #model.save('model/resnet18.h5') # h5
+
 
 # Save model pb
 model.save('model/resnet18') # pb

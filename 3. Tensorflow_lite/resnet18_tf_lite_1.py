@@ -59,14 +59,15 @@ if optimize:
         tflite_model = converter.convert()
         open(tflite_name, "wb").write(tflite_model)
     else :
-        print('convertation pass')
+        print('The conversion process passes because the file already exists')
 else:
     tflite_name = "model/converted_model1.tflite"
     if os.path.isfile(tflite_name) == False:
         converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
         tflite_model = converter.convert()
+        open(tflite_name, "wb").write(tflite_model)
     else :
-        print('convertation pass')
+        print('The conversion process passes because the file already exists')
 
 interpreter = tf.lite.Interpreter(model_path=tflite_name)
 interpreter.allocate_tensors()
@@ -102,11 +103,3 @@ print('{} iteration time (tensorflow): {} [sec]'.format(iteration, dur_time))
 max_value2 = tf_output.max()
 max_index2 = tf_output.argmax()
 print('resnet18 max index : {} , value : {}, class name : {}'.format(max_index2, max_value2, class_name[max_index2]))
-
-
-# CPU
-# 100 iteration time (tensorflow): 4.975841522216797 [sec]
-# resnet18 max index : 388 , value : 13.55379581451416, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
-# GPU
-# 100 iteration time (tensorflow): 4.368717432022095  [sec]
-# resnet18 max index : 388 , value : 13.553840637207031, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca

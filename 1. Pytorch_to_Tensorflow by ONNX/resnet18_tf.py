@@ -1,6 +1,5 @@
 import torch, torchvision, os, cv2, struct, time
 import numpy as np
-#from utils import *
 import torch.onnx
 import onnx
 import tensorflow as tf
@@ -62,8 +61,6 @@ def infer_tf(img, net, half, device):
     if half:
         img5 = img5.half()
     img6 = img5.unsqueeze(0)                        # [c,h,w] -> [1,c,h,w]
-    #img6 = img6.to(device)
-    #out = net(img6)
     out = net.run(img6)
     return out
 
