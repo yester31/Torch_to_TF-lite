@@ -1,12 +1,11 @@
 import tensorflow as tf
-import resnet
 import cv2
 import numpy as np
 import os
 from tensorflow.python.client import device_lib
 import time
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # for CPU
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # for CPU
 
 class_name = [  #bg +  1000 classes #"background",
    "tench Tinca tinca","goldfish Carassius auratus","great white shark white shark man-eater man-eating shark Carcharodon carcharias","tiger shark Galeocerdo cuvieri","hammerhead hammerhead shark","electric ray crampfish numbfish torpedo","stingray","cock","hen","ostrich Struthio camelus","brambling Fringilla montifringilla","goldfinch Carduelis carduelis","house finch linnet Carpodacus mexicanus","junco snowbird","indigo bunting indigo finch indigo bird Passerina cyanea","robin American robin Turdus migratorius","bulbul","jay","magpie","chickadee","water ouzel dipper","kite","bald eagle American eagle Haliaeetus leucocephalus","vulture","great grey owl great gray owl Strix nebulosa","European fire salamander Salamandra salamandra","common newt Triturus vulgaris","eft","spotted salamander Ambystoma maculatum","axolotl mud puppy Ambystoma mexicanum","bullfrog Rana catesbeiana","tree frog tree-frog","tailed frog bell toad ribbed toad tailed toad Ascaphus trui","loggerhead loggerhead turtle Caretta caretta","leatherback turtle leatherback leathery turtle Dermochelys coriacea","mud turtle","terrapin","box turtle box tortoise","banded gecko","common iguana iguana Iguana iguana","American chameleon anole Anolis carolinensis",
@@ -40,14 +39,36 @@ for device in device_lib.list_local_devices():
 print("tensorflow:", tf.__version__)
 
 # pb load
-saved_model_dir ='../1. Pytorch_to_Tensorflow/model/resnet18'
+saved_model_dir ='../1. Pytorch_to_Tensorflow by ONNX/model/resnet18'
 #model = tf.keras.models.load_model(saved_model_dir)
 
-converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
-tflite_model = converter.convert()
-open("model/converted_model.tflite", "wb").write(tflite_model)
+precision = '16'
+optimize = True
+if optimize:
+    tflite_name = "model/converted_model1_opti_{}.tflite".format(precision)
+    if os.path.isfile(tflite_name) == False:
+        converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        if precision == 16:
+            converter.target_spec.supported_types = [tf.float16]
+        # elif precision == 8:
+        #     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+        #     converter.inference_input_type = tf.uint8
+        #     converter.inference_output_type = tf.uint8
 
-interpreter = tf.lite.Interpreter(model_path="./model/converted_model.tflite")
+        tflite_model = converter.convert()
+        open(tflite_name, "wb").write(tflite_model)
+    else :
+        print('convertation pass')
+else:
+    tflite_name = "model/converted_model1.tflite"
+    if os.path.isfile(tflite_name) == False:
+        converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
+        tflite_model = converter.convert()
+    else :
+        print('convertation pass')
+
+interpreter = tf.lite.Interpreter(model_path=tflite_name)
 interpreter.allocate_tensors()
 
 # Get input and output tensors.
@@ -56,9 +77,10 @@ output_details = interpreter.get_output_details()
 
 img0 = cv2.imread('../TestDate/panda0.jpg')  # image file load
 img1 = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB) # bgr -> rgb
-img2 = img1.astype(np.float32)               # uint -> float32
-img2 /= 255
-img = np.expand_dims(img2, 0)
+img2 = img1.transpose(2, 0, 1)  # hwc -> chw
+img3 = img2.astype(np.float32)               # uint -> float32
+img3 /= 255
+img = np.expand_dims(img3, 0)
 
 interpreter.set_tensor(input_details[0]['index'], img)
 interpreter.invoke()

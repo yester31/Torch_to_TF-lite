@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import requests, shutil, PIL, os
 from tensorflow.python.client import device_lib
 import time
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 print('tf available : ', tf.test.is_gpu_available())
 for device in device_lib.list_local_devices():

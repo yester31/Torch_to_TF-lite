@@ -1,5 +1,4 @@
 import tensorflow as tf
-import resnet
 import cv2
 import numpy as np
 import os
@@ -45,9 +44,9 @@ saved_model_dir ='../2. Pytorch_to_Tensorflow by functional API/model/resnet18'
 
 converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
 tflite_model = converter.convert()
-open("model/converted_model.tflite", "wb").write(tflite_model)
+open("model/converted_model2.tflite", "wb").write(tflite_model)
 
-interpreter = tf.lite.Interpreter(model_path="./model/converted_model.tflite")
+interpreter = tf.lite.Interpreter(model_path="./model/converted_model2.tflite")
 interpreter.allocate_tensors()
 
 # Get input and output tensors.

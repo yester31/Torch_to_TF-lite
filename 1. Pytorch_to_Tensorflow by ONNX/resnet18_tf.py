@@ -1,6 +1,6 @@
 import torch, torchvision, os, cv2, struct, time
 import numpy as np
-from utils import *
+#from utils import *
 import torch.onnx
 import onnx
 import tensorflow as tf
@@ -47,8 +47,6 @@ class_name = [  #bg +  1000 classes #"background",
     "cauliflower","zucchini courgette","spaghetti squash","acorn squash","butternut squash","cucumber cuke","artichoke globe artichoke","bell pepper","cardoon","mushroom","Granny Smith","strawberry","orange","lemon","fig","pineapple ananas","banana","jackfruit jak jack","custard apple","pomegranate","hay","carbonara","chocolate sauce chocolate syrup","dough","meat loaf meatloaf","pizza pizza pie","potpie","burrito","red wine","espresso","cup","eggnog","alp","bubble","cliff drop drop-off","coral reef","geyser","lakeside lakeshore","promontory headland head foreland","sandbar sand bar","seashore coast seacoast sea-coast","valley vale","volcano","ballplayer baseball player","groom bridegroom","scuba diver","rapeseed","daisy","yellow ladys slipper yellow lady-slipper Cypripedium calceolus Cypripedium parviflorum","corn","acorn","hip rose hip rosehip","buckeye horse chestnut conker","coral fungus","agaric",
    "gyromitra","stinkhorn carrion fungus","earthstar","hen-of-the-woods hen of the woods Polyporus frondosus Grifola frondosa","bolete","ear spike capitulum","toilet tissue toilet paper bathroom tissue"
 ]
-
-
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu:0")
 #device = torch.device("cpu:0")
@@ -112,7 +110,7 @@ def main():
     onnx.checker.check_model(onnx_model)
 
     tf_model = prepare(onnx_model)  # run the loaded model
-    tf_model.export_graph('model/resnet18_tf.pb')
+    tf_model.export_graph('model/resnet18')
 
     img = cv2.imread('../TestDate/panda0.jpg')  # image file load
     dur_time = 0
