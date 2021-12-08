@@ -42,16 +42,55 @@ print("tensorflow:", tf.__version__)
 saved_model_dir ='../2. Pytorch_to_Tensorflow by functional API/model/resnet18'
 #model = tf.keras.models.load_model(saved_model_dir)
 
-precision = '16'
+def getListOfFiles(dir_path):
+    # create a file list from dir_path and sub directories
+    if not os.path.exists(dir_path):
+        print('There are no directory {}'.format(dir_path))
+    else :
+        listOfFile = [f for f in os.listdir(dir_path) if f.endswith('.jpg')]
+        allFiles = list()
+        # Iterate over all the entries
+        for entry in listOfFile:
+            # Create full path
+            fullPath = dir_path + '/' + entry
+            # If entry is a directory then get the list of files in this directory
+            if os.path.isdir(fullPath):
+                allFiles = allFiles + getListOfFiles(fullPath)
+            else:
+                allFiles.append(fullPath)
+        return allFiles
+
+image_file_path_list = getListOfFiles('../Data_calib')
+
+images = []
+for img_path in image_file_path_list:
+    img0 = cv2.imread(img_path)  # image file load
+    img1 = cv2.resize(img0, dsize=(224, 224), interpolation=cv2.INTER_LINEAR)
+    img2 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)  # bgr -> rgb
+    img3 = img2.astype(np.float32)  # uint -> float32
+    img3 /= 255
+    img = np.expand_dims(img3, 0)
+    images.append(img)
+
+images = np.squeeze(np.array(images), axis=1)
+
+def representative_dataset():
+  for data in tf.data.Dataset.from_tensor_slices(images).batch(1).take(100):
+    yield [tf.dtypes.cast(data, tf.float32)]
+
+precision = '8'
 optimize = True
 if optimize:
     tflite_name = "model/converted_model2_opti_{}.tflite".format(precision)
     if os.path.isfile(tflite_name) == False:
         converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        if precision == 16:
+        if precision == '16':
             converter.target_spec.supported_types = [tf.float16]
-        # elif precision == 8:
+        elif precision == '8':
+            converter.representative_dataset = representative_dataset
+        # elif precision == '8i': # 정수화된 입력 필요 ***
+        #     converter.representative_dataset = representative_dataset
         #     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
         #     converter.inference_input_type = tf.uint8
         #     converter.inference_output_type = tf.uint8
@@ -97,8 +136,33 @@ for i in range(iteration):
 
     dur = time.time() - begin
     dur_time += dur
-print('{} iteration time (tensorflow): {} [sec]'.format(iteration, dur_time))
+print('{} iteration time (tensorflow lite): {} [sec]'.format(iteration, dur_time))
 
 max_value2 = tf_output.max()
 max_index2 = tf_output.argmax()
 print('resnet18 max index : {} , value : {}, class name : {}'.format(max_index2, max_value2, class_name[max_index2]))
+
+# 2021-12-09
+# float 32
+# device = "cpu:0" 일 때
+# 100 iteration time (tensorflow lite): 7.781376838684082 [sec] 44.5MB
+# resnet18 max index : 388 , value : 13.55378532409668, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
+# device = "gpu:0" 일 때
+# 100 iteration time (tensorflow lite): 5.54304313659668 [sec] 44.5MB
+# resnet18 max index : 388 , value : 13.55378532409668, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
+
+# float 16
+# device = "cpu:0" 일 때
+# 100 iteration time (tensorflow lite): 5.447983264923096 [sec] 22.3MB
+# resnet18 max index : 388 , value : 13.548078536987305, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
+# device = "gpu:0" 일 때
+# 100 iteration time (tensorflow lite): 5.681312561035156 [sec] 22.3MB
+# resnet18 max index : 388 , value : 13.548078536987305, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
+
+# int 8
+# device = "cpu:0" 일 때
+# 100 iteration time (tensorflow lite): 977.5691411495209 [sec] 11.2MB
+# resnet18 max index : 388 , value : 13.718345642089844, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
+# device = "gpu:0" 일 때
+# 100 iteration time (tensorflow lite): 978.613954782486 [sec] 11.2MB
+# resnet18 max index : 388 , value : 13.718345642089844, class name : giant panda panda panda bear coon bear Ailuropoda melanoleuca
